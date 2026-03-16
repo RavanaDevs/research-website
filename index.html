@@ -1,0 +1,2091 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FleetGuard — Intelligent Fleet Maintenance Research</title>
+  <meta name="description" content="An IoT and Machine Learning framework for intelligent predictive maintenance of commercial vehicle fleets using OBD-II data. BICT Honours Research, USJ." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet" />
+
+  <style>
+    /* ══════════════════════════════════════════
+       TOKENS & RESET
+    ══════════════════════════════════════════ */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:         #FFFFFF;
+      --surface:    #F7F9FC;
+      --surface2:   #EEF2F8;
+      --navy:       #0B1D3A;
+      --blue:       #1558C0;
+      --blue-light: #E8EFFC;
+      --green:      #0A7055;
+      --green-light:#E6F4F0;
+      --muted:      #5C6B82;
+      --border:     #DDE3EC;
+      --text:       #1A2438;
+
+      --ff-display: 'Cormorant Garamond', Georgia, serif;
+      --ff-body:    'Outfit', sans-serif;
+
+      --radius:     10px;
+      --shadow-sm:  0 1px 4px rgba(11,29,58,.07);
+      --shadow-md:  0 4px 20px rgba(11,29,58,.10);
+      --shadow-lg:  0 12px 48px rgba(11,29,58,.12);
+
+      --transition: 0.32s cubic-bezier(.4,0,.2,1);
+    }
+
+    html { scroll-behavior: smooth; font-size: 16px; }
+
+    body {
+      font-family: var(--ff-body);
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+      overflow-x: hidden;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    img { max-width: 100%; display: block; }
+    ul { list-style: none; }
+
+    /* ══════════════════════════════════════════
+       UTILITY
+    ══════════════════════════════════════════ */
+    .container {
+      width: 100%;
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 2rem;
+    }
+
+    .section-label {
+      display: inline-block;
+      font-family: var(--ff-body);
+      font-size: .72rem;
+      font-weight: 600;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      color: var(--blue);
+      background: var(--blue-light);
+      padding: .28em .9em;
+      border-radius: 50px;
+      margin-bottom: 1.1rem;
+    }
+
+    .section-title {
+      font-family: var(--ff-display);
+      font-size: clamp(1.9rem, 3.5vw, 2.7rem);
+      font-weight: 600;
+      color: var(--navy);
+      line-height: 1.2;
+      margin-bottom: .8rem;
+    }
+
+    .section-sub {
+      font-size: 1rem;
+      color: var(--muted);
+      max-width: 56ch;
+      line-height: 1.75;
+    }
+
+    .divider {
+      width: 48px;
+      height: 3px;
+      background: var(--blue);
+      border-radius: 2px;
+      margin: 1.2rem 0;
+    }
+
+    /* scroll reveal */
+    .reveal {
+      opacity: 0;
+      transform: translateY(28px);
+      transition: opacity .65s ease, transform .65s ease;
+    }
+    .reveal.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    .reveal-delay-1 { transition-delay: .1s; }
+    .reveal-delay-2 { transition-delay: .2s; }
+    .reveal-delay-3 { transition-delay: .3s; }
+    .reveal-delay-4 { transition-delay: .4s; }
+
+    /* ══════════════════════════════════════════
+       NAVBAR
+    ══════════════════════════════════════════ */
+    #navbar {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 999;
+      padding: 1.2rem 0;
+      transition: background var(--transition), box-shadow var(--transition), padding var(--transition);
+    }
+    #navbar.scrolled {
+      background: rgba(255,255,255,.92);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      box-shadow: 0 1px 0 var(--border);
+      padding: .8rem 0;
+    }
+    #navbar .nav-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: .65rem;
+    }
+    .nav-logo-icon {
+      width: 34px; height: 34px;
+      background: var(--navy);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .nav-logo-icon svg { width: 18px; height: 18px; }
+    .nav-logo-text {
+      font-family: var(--ff-display);
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: var(--navy);
+      letter-spacing: -.01em;
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 2.2rem;
+    }
+    .nav-links a {
+      font-size: .88rem;
+      font-weight: 500;
+      color: var(--muted);
+      letter-spacing: .01em;
+      transition: color var(--transition);
+    }
+    .nav-links a:hover { color: var(--navy); }
+    .nav-links a.active { color: var(--blue); }
+
+    .nav-cta {
+      display: flex;
+      align-items: center;
+      gap: .8rem;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: .5rem;
+      font-family: var(--ff-body);
+      font-size: .86rem;
+      font-weight: 500;
+      border-radius: var(--radius);
+      padding: .55em 1.3em;
+      cursor: pointer;
+      border: none;
+      transition: all var(--transition);
+      white-space: nowrap;
+    }
+    .btn-outline {
+      border: 1.5px solid var(--border);
+      color: var(--navy);
+      background: transparent;
+    }
+    .btn-outline:hover {
+      border-color: var(--navy);
+      background: var(--navy);
+      color: #fff;
+    }
+    .btn-primary {
+      background: var(--navy);
+      color: #fff;
+      box-shadow: var(--shadow-sm);
+    }
+    .btn-primary:hover {
+      background: var(--blue);
+      box-shadow: var(--shadow-md);
+      transform: translateY(-1px);
+    }
+
+    .hamburger {
+      display: none;
+      flex-direction: column;
+      gap: 5px;
+      cursor: pointer;
+      padding: 4px;
+    }
+    .hamburger span {
+      display: block;
+      width: 22px; height: 2px;
+      background: var(--navy);
+      border-radius: 2px;
+      transition: var(--transition);
+    }
+
+    /* ══════════════════════════════════════════
+       HERO
+    ══════════════════════════════════════════ */
+    #hero {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      background: var(--bg);
+      padding: 6rem 0 4rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* subtle grid background */
+    #hero::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(var(--border) 1px, transparent 1px),
+        linear-gradient(90deg, var(--border) 1px, transparent 1px);
+      background-size: 60px 60px;
+      opacity: .35;
+      mask-image: radial-gradient(ellipse 80% 60% at 50% 50%, black 30%, transparent 100%);
+      -webkit-mask-image: radial-gradient(ellipse 80% 60% at 50% 50%, black 30%, transparent 100%);
+    }
+
+    /* floating accent blobs */
+    #hero::after {
+      content: '';
+      position: absolute;
+      top: 10%; right: -8%;
+      width: 500px; height: 500px;
+      background: radial-gradient(circle, rgba(21,88,192,.06) 0%, transparent 70%);
+      border-radius: 50%;
+      pointer-events: none;
+    }
+
+    .hero-inner {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4rem;
+      align-items: center;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: .5rem;
+      font-size: .75rem;
+      font-weight: 600;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--blue);
+      background: var(--blue-light);
+      border: 1px solid rgba(21,88,192,.18);
+      padding: .35em 1em;
+      border-radius: 50px;
+      margin-bottom: 1.4rem;
+    }
+    .hero-badge .dot {
+      width: 6px; height: 6px;
+      background: var(--blue);
+      border-radius: 50%;
+      animation: pulse-dot 2s ease-in-out infinite;
+    }
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: .5; transform: scale(.7); }
+    }
+
+    .hero-title {
+      font-family: var(--ff-display);
+      font-size: clamp(2.4rem, 4.5vw, 3.6rem);
+      font-weight: 700;
+      color: var(--navy);
+      line-height: 1.12;
+      margin-bottom: 1.4rem;
+      letter-spacing: -.02em;
+    }
+    .hero-title em {
+      font-style: italic;
+      color: var(--blue);
+    }
+
+    .hero-desc {
+      font-size: 1.02rem;
+      color: var(--muted);
+      line-height: 1.8;
+      margin-bottom: 2rem;
+      max-width: 50ch;
+    }
+
+    .hero-actions {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+      margin-bottom: 2.8rem;
+    }
+
+    .btn-hero-primary {
+      font-size: .95rem;
+      padding: .75em 1.8em;
+      background: var(--navy);
+      color: #fff;
+      border-radius: var(--radius);
+      border: none;
+      display: inline-flex;
+      align-items: center;
+      gap: .55rem;
+      font-family: var(--ff-body);
+      font-weight: 500;
+      cursor: pointer;
+      transition: all var(--transition);
+      box-shadow: 0 4px 14px rgba(11,29,58,.22);
+    }
+    .btn-hero-primary:hover {
+      background: var(--blue);
+      box-shadow: 0 6px 22px rgba(21,88,192,.3);
+      transform: translateY(-2px);
+    }
+    .btn-hero-secondary {
+      font-size: .95rem;
+      padding: .73em 1.8em;
+      border: 1.5px solid var(--border);
+      background: transparent;
+      color: var(--navy);
+      border-radius: var(--radius);
+      display: inline-flex;
+      align-items: center;
+      gap: .55rem;
+      font-family: var(--ff-body);
+      font-weight: 500;
+      cursor: pointer;
+      transition: all var(--transition);
+    }
+    .btn-hero-secondary:hover {
+      border-color: var(--navy);
+      background: var(--navy);
+      color: #fff;
+    }
+
+    .hero-meta {
+      display: flex;
+      align-items: center;
+      gap: 1.4rem;
+      flex-wrap: wrap;
+    }
+    .hero-meta-item {
+      display: flex;
+      align-items: center;
+      gap: .4rem;
+      font-size: .82rem;
+      color: var(--muted);
+    }
+    .hero-meta-item svg { width: 14px; height: 14px; opacity: .7; }
+
+    /* Hero Visual Panel */
+    .hero-visual {
+      position: relative;
+    }
+    .hero-card-main {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 1.6rem;
+      box-shadow: var(--shadow-lg);
+      position: relative;
+      z-index: 2;
+    }
+    .hero-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.2rem;
+    }
+    .card-title-sm {
+      font-size: .78rem;
+      font-weight: 600;
+      color: var(--muted);
+      letter-spacing: .06em;
+      text-transform: uppercase;
+    }
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: .35rem;
+      font-size: .72rem;
+      font-weight: 600;
+      color: var(--green);
+      background: var(--green-light);
+      padding: .25em .75em;
+      border-radius: 50px;
+    }
+    .status-badge .dot-green {
+      width: 6px; height: 6px;
+      background: var(--green);
+      border-radius: 50%;
+      animation: pulse-dot 1.6s ease-in-out infinite;
+    }
+
+    .metric-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: .8rem;
+      margin-bottom: 1.2rem;
+    }
+    .metric-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: .8rem .9rem;
+      text-align: center;
+    }
+    .metric-box .val {
+      font-family: var(--ff-display);
+      font-size: 1.55rem;
+      font-weight: 700;
+      color: var(--navy);
+      line-height: 1;
+      margin-bottom: .2rem;
+    }
+    .metric-box .lbl {
+      font-size: .7rem;
+      color: var(--muted);
+      font-weight: 500;
+    }
+
+    .fault-row {
+      display: flex;
+      flex-direction: column;
+      gap: .5rem;
+    }
+    .fault-item {
+      display: flex;
+      align-items: center;
+      gap: .7rem;
+    }
+    .fault-code {
+      font-size: .7rem;
+      font-weight: 700;
+      font-family: 'Courier New', monospace;
+      color: var(--blue);
+      background: var(--blue-light);
+      padding: .2em .5em;
+      border-radius: 4px;
+      min-width: 46px;
+      text-align: center;
+    }
+    .fault-bar-wrap {
+      flex: 1;
+      height: 6px;
+      background: var(--border);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+    .fault-bar {
+      height: 100%;
+      border-radius: 3px;
+      background: var(--blue);
+      width: 0;
+      transition: width 1.4s cubic-bezier(.4,0,.2,1);
+    }
+    .fault-pct {
+      font-size: .72rem;
+      font-weight: 600;
+      color: var(--navy);
+      min-width: 36px;
+      text-align: right;
+    }
+
+    /* floating sub-card */
+    .hero-card-float {
+      position: absolute;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: .9rem 1.1rem;
+      box-shadow: var(--shadow-md);
+      z-index: 3;
+    }
+    .hero-card-float.float-left {
+      left: -2.5rem;
+      bottom: 2rem;
+      min-width: 140px;
+    }
+    .hero-card-float.float-right {
+      right: -2rem;
+      top: 2.5rem;
+      min-width: 130px;
+    }
+    .float-label {
+      font-size: .68rem;
+      color: var(--muted);
+      font-weight: 500;
+      margin-bottom: .2rem;
+    }
+    .float-value {
+      font-family: var(--ff-display);
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: var(--navy);
+      line-height: 1;
+    }
+    .float-sub {
+      font-size: .68rem;
+      color: var(--green);
+      font-weight: 600;
+      margin-top: .15rem;
+    }
+
+    /* ══════════════════════════════════════════
+       STATS STRIP
+    ══════════════════════════════════════════ */
+    #stats {
+      background: var(--navy);
+      padding: 3rem 0;
+    }
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1px;
+      background: rgba(255,255,255,.08);
+    }
+    .stat-cell {
+      background: var(--navy);
+      padding: 1.8rem 2rem;
+      text-align: center;
+    }
+    .stat-cell .num {
+      font-family: var(--ff-display);
+      font-size: 2.6rem;
+      font-weight: 700;
+      color: #fff;
+      line-height: 1;
+      margin-bottom: .3rem;
+    }
+    .stat-cell .num span {
+      color: #6CAEFF;
+    }
+    .stat-cell .desc {
+      font-size: .82rem;
+      color: rgba(255,255,255,.5);
+      font-weight: 400;
+      line-height: 1.4;
+    }
+
+    /* ══════════════════════════════════════════
+       OVERVIEW / ABSTRACT
+    ══════════════════════════════════════════ */
+    #overview {
+      padding: 6rem 0;
+      background: var(--bg);
+    }
+    .overview-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 5rem;
+      align-items: center;
+    }
+    .overview-text p {
+      font-size: .97rem;
+      color: var(--muted);
+      line-height: 1.85;
+      margin-bottom: 1rem;
+    }
+    .highlight-box {
+      background: var(--blue-light);
+      border-left: 3px solid var(--blue);
+      border-radius: 0 var(--radius) var(--radius) 0;
+      padding: 1rem 1.3rem;
+      margin: 1.5rem 0;
+    }
+    .highlight-box p {
+      font-size: .92rem;
+      color: var(--navy);
+      line-height: 1.7;
+      margin: 0;
+    }
+
+    .overview-cards {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+    .ov-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.3rem 1.5rem;
+      display: flex;
+      align-items: flex-start;
+      gap: 1rem;
+      transition: box-shadow var(--transition), transform var(--transition);
+    }
+    .ov-card:hover {
+      box-shadow: var(--shadow-md);
+      transform: translateX(4px);
+    }
+    .ov-icon {
+      width: 40px; height: 40px;
+      border-radius: 9px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .ov-icon.blue { background: var(--blue-light); }
+    .ov-icon.green { background: var(--green-light); }
+    .ov-icon svg { width: 20px; height: 20px; }
+    .ov-card h4 {
+      font-size: .92rem;
+      font-weight: 600;
+      color: var(--navy);
+      margin-bottom: .25rem;
+    }
+    .ov-card p {
+      font-size: .83rem;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    /* ══════════════════════════════════════════
+       HOW IT WORKS — PIPELINE
+    ══════════════════════════════════════════ */
+    #pipeline {
+      padding: 6rem 0;
+      background: var(--surface);
+    }
+    .pipeline-header {
+      text-align: center;
+      margin-bottom: 3.5rem;
+    }
+    .pipeline-header .section-sub {
+      margin: 0 auto;
+    }
+
+    .pipeline-steps {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.5rem;
+      position: relative;
+    }
+
+    /* connecting line */
+    .pipeline-steps::before {
+      content: '';
+      position: absolute;
+      top: 50px;
+      left: calc(16.66% + 1rem);
+      right: calc(16.66% + 1rem);
+      height: 1px;
+      background: var(--border);
+      z-index: 0;
+    }
+
+    .step-card {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 2rem 1.6rem;
+      position: relative;
+      z-index: 1;
+      transition: box-shadow var(--transition), transform var(--transition), border-color var(--transition);
+    }
+    .step-card:hover {
+      box-shadow: var(--shadow-lg);
+      transform: translateY(-4px);
+      border-color: var(--blue);
+    }
+    .step-num {
+      width: 42px; height: 42px;
+      border-radius: 50%;
+      background: var(--navy);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--ff-display);
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin-bottom: 1.2rem;
+    }
+    .step-card h3 {
+      font-family: var(--ff-display);
+      font-size: 1.2rem;
+      font-weight: 600;
+      color: var(--navy);
+      margin-bottom: .6rem;
+    }
+    .step-card p {
+      font-size: .88rem;
+      color: var(--muted);
+      line-height: 1.7;
+    }
+    .step-tag {
+      display: inline-block;
+      margin-top: 1rem;
+      font-size: .7rem;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--blue);
+      background: var(--blue-light);
+      padding: .25em .75em;
+      border-radius: 50px;
+    }
+
+    /* ══════════════════════════════════════════
+       FAULT CLASSES
+    ══════════════════════════════════════════ */
+    #faults {
+      padding: 6rem 0;
+      background: var(--bg);
+    }
+    .faults-header {
+      margin-bottom: 3rem;
+    }
+    .faults-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 1rem;
+    }
+    .fault-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.5rem 1.2rem;
+      text-align: center;
+      transition: all var(--transition);
+      cursor: default;
+    }
+    .fault-card:hover {
+      background: var(--navy);
+      border-color: var(--navy);
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-lg);
+    }
+    .fault-card:hover .fc-code,
+    .fault-card:hover .fc-name,
+    .fault-card:hover .fc-sys,
+    .fault-card:hover .fc-f1 { color: #fff; }
+    .fault-card:hover .fc-badge { background: rgba(255,255,255,.12); color: rgba(255,255,255,.8); }
+    .fault-card:hover .fc-icon { background: rgba(255,255,255,.1); }
+    .fault-card:hover .fc-icon svg { stroke: #fff; }
+
+    .fc-icon {
+      width: 44px; height: 44px;
+      background: var(--blue-light);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto .9rem;
+      transition: var(--transition);
+    }
+    .fc-icon svg { width: 22px; height: 22px; stroke: var(--blue); transition: var(--transition); }
+    .fc-code {
+      font-family: 'Courier New', monospace;
+      font-size: .78rem;
+      font-weight: 700;
+      color: var(--blue);
+      letter-spacing: .04em;
+      transition: var(--transition);
+    }
+    .fc-name {
+      font-size: .9rem;
+      font-weight: 600;
+      color: var(--navy);
+      margin: .3rem 0 .2rem;
+      transition: var(--transition);
+    }
+    .fc-sys {
+      font-size: .75rem;
+      color: var(--muted);
+      margin-bottom: .7rem;
+      transition: var(--transition);
+    }
+    .fc-badge {
+      display: inline-block;
+      font-size: .68rem;
+      font-weight: 700;
+      color: var(--green);
+      background: var(--green-light);
+      padding: .22em .65em;
+      border-radius: 50px;
+      transition: var(--transition);
+    }
+    .fc-f1 {
+      font-family: var(--ff-display);
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: var(--navy);
+      margin-top: .5rem;
+      transition: var(--transition);
+    }
+
+    /* ══════════════════════════════════════════
+       PERFORMANCE RESULTS
+    ══════════════════════════════════════════ */
+    #results {
+      padding: 6rem 0;
+      background: var(--surface);
+    }
+    .results-layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 3rem;
+      align-items: start;
+    }
+
+    .results-info .section-title { margin-bottom: .5rem; }
+    .results-info p {
+      font-size: .95rem;
+      color: var(--muted);
+      line-height: 1.8;
+      margin-bottom: 1.2rem;
+    }
+    .result-highlight {
+      display: flex;
+      gap: 1.5rem;
+      margin: 2rem 0;
+    }
+    .rh-item {
+      text-align: center;
+    }
+    .rh-val {
+      font-family: var(--ff-display);
+      font-size: 2.2rem;
+      font-weight: 700;
+      color: var(--navy);
+      line-height: 1;
+    }
+    .rh-label {
+      font-size: .75rem;
+      color: var(--muted);
+      font-weight: 500;
+      margin-top: .2rem;
+    }
+
+    .metric-cards {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+    .perf-card {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.2rem 1.4rem;
+    }
+    .perf-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: .7rem;
+    }
+    .perf-card-name {
+      font-size: .88rem;
+      font-weight: 600;
+      color: var(--navy);
+    }
+    .perf-card-dtc {
+      font-family: 'Courier New', monospace;
+      font-size: .72rem;
+      font-weight: 700;
+      color: var(--blue);
+      background: var(--blue-light);
+      padding: .2em .55em;
+      border-radius: 4px;
+    }
+    .perf-bar-wrap {
+      height: 8px;
+      background: var(--border);
+      border-radius: 4px;
+      overflow: hidden;
+      margin-bottom: .4rem;
+    }
+    .perf-bar {
+      height: 100%;
+      border-radius: 4px;
+      background: linear-gradient(90deg, var(--blue), #5B9BF8);
+      width: 0;
+      transition: width 1.6s cubic-bezier(.4,0,.2,1);
+    }
+    .perf-bar.perfect { background: linear-gradient(90deg, var(--green), #34D399); }
+    .perf-footer {
+      display: flex;
+      justify-content: space-between;
+    }
+    .perf-stat {
+      font-size: .73rem;
+      color: var(--muted);
+    }
+    .perf-stat span { color: var(--navy); font-weight: 600; }
+
+    /* ══════════════════════════════════════════
+       LIVE APPS CTA
+    ══════════════════════════════════════════ */
+    #apps {
+      padding: 6rem 0;
+      background: var(--bg);
+    }
+    .apps-header {
+      text-align: center;
+      margin-bottom: 3rem;
+    }
+    .apps-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+    }
+    .app-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 2.5rem 2.2rem;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow: hidden;
+      transition: all var(--transition);
+    }
+    .app-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+    }
+    .app-card.fleet::before { background: linear-gradient(90deg, var(--navy), var(--blue)); }
+    .app-card.ml::before    { background: linear-gradient(90deg, var(--green), #34D399); }
+
+    .app-card:hover {
+      box-shadow: var(--shadow-lg);
+      transform: translateY(-4px);
+      border-color: transparent;
+    }
+
+    .app-card-icon {
+      width: 52px; height: 52px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 1.4rem;
+    }
+    .app-card.fleet .app-card-icon { background: var(--blue-light); }
+    .app-card.ml    .app-card-icon { background: var(--green-light); }
+    .app-card-icon svg { width: 26px; height: 26px; }
+    .app-card.fleet .app-card-icon svg { stroke: var(--blue); }
+    .app-card.ml    .app-card-icon svg { stroke: var(--green); }
+
+    .app-card h3 {
+      font-family: var(--ff-display);
+      font-size: 1.4rem;
+      font-weight: 600;
+      color: var(--navy);
+      margin-bottom: .6rem;
+    }
+    .app-card p {
+      font-size: .9rem;
+      color: var(--muted);
+      line-height: 1.75;
+      margin-bottom: 1.8rem;
+      flex: 1;
+    }
+    .app-features {
+      display: flex;
+      flex-direction: column;
+      gap: .4rem;
+      margin-bottom: 1.8rem;
+    }
+    .app-feature {
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+      font-size: .83rem;
+      color: var(--muted);
+    }
+    .app-feature::before {
+      content: '';
+      width: 5px; height: 5px;
+      border-radius: 50%;
+      background: var(--border);
+      flex-shrink: 0;
+    }
+    .app-card.fleet .app-feature::before { background: var(--blue); }
+    .app-card.ml    .app-feature::before { background: var(--green); }
+
+    .app-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: .5rem;
+      font-size: .88rem;
+      font-weight: 600;
+      padding: .7em 1.5em;
+      border-radius: var(--radius);
+      font-family: var(--ff-body);
+      cursor: pointer;
+      border: none;
+      transition: all var(--transition);
+      text-decoration: none;
+      width: fit-content;
+    }
+    .app-card.fleet .app-btn {
+      background: var(--navy);
+      color: #fff;
+    }
+    .app-card.fleet .app-btn:hover { background: var(--blue); }
+    .app-card.ml .app-btn {
+      background: var(--green);
+      color: #fff;
+    }
+    .app-card.ml .app-btn:hover { background: #085c45; }
+
+    .app-soon {
+      display: inline-flex;
+      align-items: center;
+      gap: .4rem;
+      font-size: .72rem;
+      font-weight: 600;
+      color: var(--muted);
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      padding: .3em .8em;
+      border-radius: 50px;
+      margin-top: .5rem;
+    }
+
+    /* ══════════════════════════════════════════
+       TECH STACK
+    ══════════════════════════════════════════ */
+    #tech {
+      padding: 5rem 0;
+      background: var(--surface);
+    }
+    .tech-header {
+      text-align: center;
+      margin-bottom: 2.5rem;
+    }
+    .tech-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: .9rem;
+      justify-content: center;
+    }
+    .tech-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: .5rem;
+      font-size: .82rem;
+      font-weight: 500;
+      color: var(--navy);
+      background: var(--bg);
+      border: 1px solid var(--border);
+      padding: .5em 1.1em;
+      border-radius: 50px;
+      transition: all var(--transition);
+    }
+    .tech-pill:hover {
+      border-color: var(--blue);
+      color: var(--blue);
+      box-shadow: 0 2px 12px rgba(21,88,192,.12);
+    }
+    .tech-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+    }
+
+    /* ══════════════════════════════════════════
+       TEAM
+    ══════════════════════════════════════════ */
+    #team {
+      padding: 6rem 0;
+      background: var(--bg);
+    }
+    .team-header {
+      text-align: center;
+      margin-bottom: 3.5rem;
+    }
+    .supervisors-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.2rem;
+      margin-bottom: 2.5rem;
+    }
+    .supervisor-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+      position: relative;
+    }
+    .supervisor-card::before {
+      content: 'SUPERVISOR';
+      position: absolute;
+      top: -1px; right: 1rem;
+      font-size: .62rem;
+      font-weight: 700;
+      letter-spacing: .1em;
+      color: var(--blue);
+      background: var(--blue-light);
+      border: 1px solid var(--border);
+      padding: .2em .65em;
+      border-radius: 0 0 6px 6px;
+    }
+    .supervisor-card.main::before {
+      content: 'MAIN SUPERVISOR';
+      color: var(--navy);
+      background: var(--surface2);
+    }
+    .sup-name {
+      font-family: var(--ff-display);
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--navy);
+      margin-bottom: .2rem;
+    }
+    .sup-role {
+      font-size: .78rem;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .section-divider-label {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin: 1.5rem 0;
+      color: var(--muted);
+      font-size: .78rem;
+      font-weight: 600;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+    }
+    .section-divider-label::before,
+    .section-divider-label::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    .members-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.2rem;
+    }
+    .member-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+      transition: all var(--transition);
+      text-align: center;
+    }
+    .member-card:hover {
+      box-shadow: var(--shadow-md);
+      transform: translateY(-3px);
+    }
+    .member-avatar {
+      width: 52px; height: 52px;
+      background: var(--navy);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto .9rem;
+      font-family: var(--ff-display);
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: #fff;
+    }
+    .member-name {
+      font-size: .92rem;
+      font-weight: 600;
+      color: var(--navy);
+      margin-bottom: .15rem;
+    }
+    .member-id {
+      font-size: .75rem;
+      color: var(--muted);
+      font-family: 'Courier New', monospace;
+    }
+
+    /* ══════════════════════════════════════════
+       FOOTER
+    ══════════════════════════════════════════ */
+    #footer {
+      background: var(--navy);
+      padding: 3.5rem 0 2rem;
+      color: rgba(255,255,255,.6);
+    }
+    .footer-inner {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr;
+      gap: 3rem;
+      margin-bottom: 2.5rem;
+    }
+    .footer-brand .nav-logo-text { color: #fff; }
+    .footer-brand p {
+      font-size: .83rem;
+      line-height: 1.7;
+      margin-top: .8rem;
+      max-width: 34ch;
+    }
+    .footer-col h5 {
+      font-size: .75rem;
+      font-weight: 700;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,.4);
+      margin-bottom: .9rem;
+    }
+    .footer-col ul { display: flex; flex-direction: column; gap: .5rem; }
+    .footer-col a {
+      font-size: .84rem;
+      color: rgba(255,255,255,.55);
+      transition: color var(--transition);
+    }
+    .footer-col a:hover { color: #fff; }
+
+    .footer-bottom {
+      border-top: 1px solid rgba(255,255,255,.08);
+      padding-top: 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: .78rem;
+    }
+
+    /* ══════════════════════════════════════════
+       MOBILE NAV DRAWER
+    ══════════════════════════════════════════ */
+    #mobile-menu {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      z-index: 998;
+      background: rgba(11,29,58,.5);
+      backdrop-filter: blur(4px);
+    }
+    #mobile-menu.open { display: block; }
+    .mobile-drawer {
+      position: absolute;
+      top: 0; right: 0;
+      width: 280px;
+      height: 100%;
+      background: var(--bg);
+      padding: 5rem 2rem 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: .4rem;
+      transform: translateX(100%);
+      transition: transform .3s cubic-bezier(.4,0,.2,1);
+    }
+    #mobile-menu.open .mobile-drawer { transform: translateX(0); }
+    .mobile-drawer a {
+      display: block;
+      font-size: 1rem;
+      font-weight: 500;
+      color: var(--navy);
+      padding: .75rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    /* ══════════════════════════════════════════
+       RESPONSIVE
+    ══════════════════════════════════════════ */
+    @media (max-width: 960px) {
+      .hero-inner      { grid-template-columns: 1fr; }
+      .hero-visual     { display: none; }
+      .overview-grid   { grid-template-columns: 1fr; gap: 2.5rem; }
+      .pipeline-steps  { grid-template-columns: 1fr; }
+      .pipeline-steps::before { display: none; }
+      .faults-grid     { grid-template-columns: repeat(3, 1fr); }
+      .results-layout  { grid-template-columns: 1fr; }
+      .apps-grid       { grid-template-columns: 1fr; }
+      .footer-inner    { grid-template-columns: 1fr; gap: 2rem; }
+      .supervisors-row { grid-template-columns: 1fr; }
+      .members-row     { grid-template-columns: 1fr 1fr; }
+      .stats-grid      { grid-template-columns: repeat(2, 1fr); }
+      .nav-links, .nav-cta { display: none; }
+      .hamburger { display: flex; }
+    }
+    @media (max-width: 600px) {
+      .faults-grid  { grid-template-columns: 1fr 1fr; }
+      .members-row  { grid-template-columns: 1fr; }
+      .metric-row   { grid-template-columns: 1fr 1fr; }
+      .stats-grid   { grid-template-columns: 1fr 1fr; }
+      .result-highlight { gap: 1rem; }
+      .hero-actions { flex-direction: column; align-items: flex-start; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════
+     NAVBAR
+═══════════════════════════════════════════════════ -->
+<nav id="navbar">
+  <div class="container">
+    <div class="nav-inner">
+      <a href="#hero" class="nav-logo">
+        <div class="nav-logo-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+            <path d="M2 17l10 5 10-5"/>
+            <path d="M2 12l10 5 10-5"/>
+          </svg>
+        </div>
+        <span class="nav-logo-text">FleetGuard</span>
+      </a>
+
+      <ul class="nav-links">
+        <li><a href="#overview">Research</a></li>
+        <li><a href="#pipeline">Pipeline</a></li>
+        <li><a href="#results">Results</a></li>
+        <li><a href="#apps">Applications</a></li>
+        <li><a href="#team">Team</a></li>
+      </ul>
+
+      <div class="nav-cta">
+        <a href="#apps" class="btn btn-outline">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+          Live Demo
+        </a>
+        <a href="https://github.com" target="_blank" class="btn btn-primary">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg>
+          GitHub
+        </a>
+      </div>
+
+      <button class="hamburger" id="hamburger-btn" aria-label="Menu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </div>
+</nav>
+
+<!-- Mobile Menu -->
+<div id="mobile-menu">
+  <div class="mobile-drawer">
+    <a href="#overview" onclick="closeMobileMenu()">Research</a>
+    <a href="#pipeline" onclick="closeMobileMenu()">Pipeline</a>
+    <a href="#results" onclick="closeMobileMenu()">Results</a>
+    <a href="#apps" onclick="closeMobileMenu()">Applications</a>
+    <a href="#team" onclick="closeMobileMenu()">Team</a>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     HERO
+═══════════════════════════════════════════════════ -->
+<section id="hero">
+  <div class="container">
+    <div class="hero-inner">
+      <!-- Left: Text -->
+      <div class="hero-text">
+        <div class="hero-badge">
+          <span class="dot"></span>
+          BICT Honours Research · USJ · 2026
+        </div>
+        <h1 class="hero-title">
+          Intelligent Fleet<br>
+          <em>Fault Identification</em><br>
+          via OBD-II Data
+        </h1>
+        <p class="hero-desc">
+          A complete IoT and Machine Learning framework for real-time
+          predictive maintenance of commercial vehicle fleets in Sri Lanka,
+          using a two-stage LSTM-Autoencoder and Random Forest pipeline.
+        </p>
+
+        <div class="hero-actions">
+          <a href="#apps" class="btn-hero-primary">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+            Fleet Manager Dashboard
+          </a>
+          <a href="#apps" class="btn-hero-secondary">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            ML Statistics Platform
+          </a>
+        </div>
+
+        <div class="hero-meta">
+          <div class="hero-meta-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+            Faculty of Technology, USJ
+          </div>
+          <div class="hero-meta-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            BICT Honours 2026
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: Visual Card -->
+      <div class="hero-visual">
+        <div class="hero-card-float float-right">
+          <div class="float-label">Model Accuracy</div>
+          <div class="float-value">89.32%</div>
+          <div class="float-sub">↑ Stage 2 Classifier</div>
+        </div>
+
+        <div class="hero-card-main">
+          <div class="hero-card-header">
+            <span class="card-title-sm">Live Inference · Stage 2</span>
+            <span class="status-badge">
+              <span class="dot-green"></span>Active
+            </span>
+          </div>
+
+          <div class="metric-row">
+            <div class="metric-box">
+              <div class="val" data-target="89" data-suffix="%">0%</div>
+              <div class="lbl">Accuracy</div>
+            </div>
+            <div class="metric-box">
+              <div class="val" data-target="5" data-suffix="">0</div>
+              <div class="lbl">Fault Classes</div>
+            </div>
+            <div class="metric-box">
+              <div class="val" data-target="60" data-suffix="k">0</div>
+              <div class="lbl">Training Samples</div>
+            </div>
+          </div>
+
+          <div class="fault-row">
+            <div class="fault-item">
+              <span class="fault-code">P0171</span>
+              <div class="fault-bar-wrap"><div class="fault-bar" data-width="100"></div></div>
+              <span class="fault-pct">100%</span>
+            </div>
+            <div class="fault-item">
+              <span class="fault-code">P0128</span>
+              <div class="fault-bar-wrap"><div class="fault-bar" data-width="99.7"></div></div>
+              <span class="fault-pct">99.7%</span>
+            </div>
+            <div class="fault-item">
+              <span class="fault-code">P0301</span>
+              <div class="fault-bar-wrap"><div class="fault-bar" data-width="95.4"></div></div>
+              <span class="fault-pct">95.4%</span>
+            </div>
+            <div class="fault-item">
+              <span class="fault-code">P0420</span>
+              <div class="fault-bar-wrap"><div class="fault-bar" data-width="93.6"></div></div>
+              <span class="fault-pct">93.6%</span>
+            </div>
+            <div class="fault-item">
+              <span class="fault-code">P0300</span>
+              <div class="fault-bar-wrap"><div class="fault-bar" data-width="69.3"></div></div>
+              <span class="fault-pct">69.3%</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="hero-card-float float-left">
+          <div class="float-label">False Alarm Rate</div>
+          <div class="float-value">1.64%</div>
+          <div class="float-sub">↓ Stage 1 Precision</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     STATS STRIP
+═══════════════════════════════════════════════════ -->
+<section id="stats">
+  <div class="container">
+    <div class="stats-grid">
+      <div class="stat-cell reveal">
+        <div class="num"><span class="count-up" data-target="89" data-suffix=".32%">0%</span></div>
+        <div class="desc">Overall Classification Accuracy</div>
+      </div>
+      <div class="stat-cell reveal reveal-delay-1">
+        <div class="num"><span class="count-up" data-target="60" data-suffix="K">0</span></div>
+        <div class="desc">Balanced Training Samples</div>
+      </div>
+      <div class="stat-cell reveal reveal-delay-2">
+        <div class="num"><span class="count-up" data-target="5" data-suffix="">0</span></div>
+        <div class="desc">OBD-II Fault Classes Detected</div>
+      </div>
+      <div class="stat-cell reveal reveal-delay-3">
+        <div class="num"><span class="count-up" data-target="14" data-suffix="">0</span></div>
+        <div class="desc">OBD-II PIDs Monitored at 1 Hz</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     OVERVIEW
+═══════════════════════════════════════════════════ -->
+<section id="overview">
+  <div class="container">
+    <div class="overview-grid">
+      <div class="overview-text reveal">
+        <span class="section-label">Research Overview</span>
+        <h2 class="section-title">Predictive Maintenance for Sri Lanka's Vehicle Fleets</h2>
+        <div class="divider"></div>
+        <p>Commercial vehicle fleets in Sri Lanka continue to rely on reactive and schedule-based maintenance practices, resulting in unexpected breakdowns, revenue loss, and inefficient use of resources.</p>
+        <div class="highlight-box">
+          <p>The OBD-II standard, mandatory on vehicles manufactured after 2001, provides a rich continuous stream of engine telemetry that remains largely unexploited by fleet operators in developing economies.</p>
+        </div>
+        <p>This research presents a complete end-to-end system: from a custom low-cost IoT device, through a cloud-based data pipeline, to a two-stage hybrid machine learning engine capable of real-time anomaly detection and specific fault code classification.</p>
+      </div>
+
+      <div class="overview-cards">
+        <div class="ov-card reveal reveal-delay-1">
+          <div class="ov-icon blue">
+            <svg viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
+          </div>
+          <div>
+            <h4>IoT Data Acquisition</h4>
+            <p>ESP32 + ELM327 device polling 14 OBD-II PIDs at 1 Hz, transmitting over MQTT to a cloud backend.</p>
+          </div>
+        </div>
+        <div class="ov-card reveal reveal-delay-2">
+          <div class="ov-icon blue">
+            <svg viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+          </div>
+          <div>
+            <h4>Physics-Based + GAN Dataset</h4>
+            <p>60,000 balanced samples generated via thermodynamic simulation (Cantera) augmented by CTGAN — solving real-world data scarcity.</p>
+          </div>
+        </div>
+        <div class="ov-card reveal reveal-delay-3">
+          <div class="ov-icon green">
+            <svg viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          </div>
+          <div>
+            <h4>Two-Stage ML Pipeline</h4>
+            <p>LSTM-Autoencoder for unsupervised anomaly detection followed by a Random Forest classifier for specific DTC identification.</p>
+          </div>
+        </div>
+        <div class="ov-card reveal reveal-delay-4">
+          <div class="ov-icon green">
+            <svg viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+          </div>
+          <div>
+            <h4>Real-Time Fleet Dashboard</h4>
+            <p>React-based fleet manager dashboard with WebSocket alerts, telemetry gauges, and actionable maintenance recommendations.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     PIPELINE — HOW IT WORKS
+═══════════════════════════════════════════════════ -->
+<section id="pipeline">
+  <div class="container">
+    <div class="pipeline-header reveal">
+      <span class="section-label">How It Works</span>
+      <h2 class="section-title">Three-Stage System Pipeline</h2>
+      <p class="section-sub">From raw vehicle telemetry to actionable maintenance alerts — entirely automated in real time.</p>
+    </div>
+    <div class="pipeline-steps">
+      <div class="step-card reveal reveal-delay-1">
+        <div class="step-num">1</div>
+        <h3>Data Acquisition &amp; Ingestion</h3>
+        <p>The ESP32 IoT device continuously polls 14 OBD-II PIDs at 1 Hz via an ELM327 adapter. Readings are serialised as JSON and published over MQTT to a Mosquitto broker, where they are ingested into a TimescaleDB hypertable.</p>
+        <span class="step-tag">IoT · MQTT · ESP32</span>
+      </div>
+      <div class="step-card reveal reveal-delay-2">
+        <div class="step-num">2</div>
+        <h3>Stage 1 — Anomaly Detection</h3>
+        <p>An LSTM-Autoencoder trained exclusively on normal driving data computes reconstruction error over a 60-second sliding window. Windows exceeding the μ+3σ threshold (0.5493) are flagged as anomalous and forwarded to Stage 2.</p>
+        <span class="step-tag">LSTM-Autoencoder · AUC-ROC 0.8011</span>
+      </div>
+      <div class="step-card reveal reveal-delay-3">
+        <div class="step-num">3</div>
+        <h3>Stage 2 — Fault Classification</h3>
+        <p>A Random Forest classifier processes a 33-dimensional engineered feature vector (14 raw + 14 delta + 5 ratio features) to identify the precise Diagnostic Trouble Code from 5 fault classes, with 89.32% overall accuracy.</p>
+        <span class="step-tag">Random Forest · 89.32% Accuracy</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     FAULT CLASSES
+═══════════════════════════════════════════════════ -->
+<section id="faults">
+  <div class="container">
+    <div class="faults-header reveal">
+      <span class="section-label">Fault Detection</span>
+      <h2 class="section-title">Five OBD-II Fault Classes</h2>
+      <p class="section-sub">Each fault class is modelled with physically consistent sensor signatures derived from OBD-II diagnostic literature.</p>
+    </div>
+    <div class="faults-grid">
+      <div class="fault-card reveal reveal-delay-1">
+        <div class="fc-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        </div>
+        <div class="fc-code">P0171</div>
+        <div class="fc-name">System Too Lean</div>
+        <div class="fc-sys">Fuel / Air System</div>
+        <span class="fc-badge">Perfect F1</span>
+        <div class="fc-f1">1.000</div>
+      </div>
+      <div class="fault-card reveal reveal-delay-1">
+        <div class="fc-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"/></svg>
+        </div>
+        <div class="fc-code">P0128</div>
+        <div class="fc-name">Thermostat Malfunction</div>
+        <div class="fc-sys">Cooling System</div>
+        <span class="fc-badge">F1 0.997</span>
+        <div class="fc-f1">0.997</div>
+      </div>
+      <div class="fault-card reveal reveal-delay-2">
+        <div class="fc-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+        </div>
+        <div class="fc-code">P0301</div>
+        <div class="fc-name">Cylinder 1 Misfire</div>
+        <div class="fc-sys">Ignition System</div>
+        <span class="fc-badge">F1 0.954</span>
+        <div class="fc-f1">0.954</div>
+      </div>
+      <div class="fault-card reveal reveal-delay-3">
+        <div class="fc-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="2"/><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+        </div>
+        <div class="fc-code">P0420</div>
+        <div class="fc-name">Catalyst Efficiency Low</div>
+        <div class="fc-sys">Emissions System</div>
+        <span class="fc-badge">F1 0.936</span>
+        <div class="fc-f1">0.936</div>
+      </div>
+      <div class="fault-card reveal reveal-delay-4">
+        <div class="fc-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z"/><line x1="16" y1="8" x2="2" y2="22"/><line x1="17.5" y1="15" x2="9" y2="15"/></svg>
+        </div>
+        <div class="fc-code">P0300</div>
+        <div class="fc-name">Random Misfire</div>
+        <div class="fc-sys">Ignition (Multi)</div>
+        <span class="fc-badge">F1 0.693</span>
+        <div class="fc-f1">0.693</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     RESULTS
+═══════════════════════════════════════════════════ -->
+<section id="results">
+  <div class="container">
+    <div class="results-layout">
+      <div class="results-info reveal">
+        <span class="section-label">Model Performance</span>
+        <h2 class="section-title">Strong Results on Synthetic Training Data</h2>
+        <div class="divider"></div>
+        <p>The two-stage pipeline was trained entirely on physics-simulated and CTGAN-augmented data, yet achieves near-real-world performance — validating the data generation approach for data-scarce environments.</p>
+        <p>Four of five fault classes achieve F1-scores above 0.93. The LSTM-Autoencoder delivers near-perfect precision (0.9836), minimising costly false alerts for fleet operators.</p>
+        <div class="result-highlight">
+          <div class="rh-item">
+            <div class="rh-val">0.89</div>
+            <div class="rh-label">Weighted F1</div>
+          </div>
+          <div class="rh-item">
+            <div class="rh-val">0.98</div>
+            <div class="rh-label">Stage 1 Precision</div>
+          </div>
+          <div class="rh-item">
+            <div class="rh-val">0.80</div>
+            <div class="rh-label">AUC-ROC</div>
+          </div>
+          <div class="rh-item">
+            <div class="rh-val">4.2ms</div>
+            <div class="rh-label">Inference Time</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="metric-cards reveal reveal-delay-2">
+        <div class="perf-card">
+          <div class="perf-card-header">
+            <span class="perf-card-name">System Too Lean</span>
+            <span class="perf-card-dtc">P0171</span>
+          </div>
+          <div class="perf-bar-wrap"><div class="perf-bar perfect" data-width="100"></div></div>
+          <div class="perf-footer">
+            <span class="perf-stat">Precision <span>1.000</span></span>
+            <span class="perf-stat">Recall <span>1.000</span></span>
+            <span class="perf-stat">F1 <span>1.000</span></span>
+          </div>
+        </div>
+        <div class="perf-card">
+          <div class="perf-card-header">
+            <span class="perf-card-name">Thermostat Malfunction</span>
+            <span class="perf-card-dtc">P0128</span>
+          </div>
+          <div class="perf-bar-wrap"><div class="perf-bar perfect" data-width="99.7"></div></div>
+          <div class="perf-footer">
+            <span class="perf-stat">Precision <span>0.996</span></span>
+            <span class="perf-stat">Recall <span>0.999</span></span>
+            <span class="perf-stat">F1 <span>0.997</span></span>
+          </div>
+        </div>
+        <div class="perf-card">
+          <div class="perf-card-header">
+            <span class="perf-card-name">Cylinder 1 Misfire</span>
+            <span class="perf-card-dtc">P0301</span>
+          </div>
+          <div class="perf-bar-wrap"><div class="perf-bar" data-width="95.4"></div></div>
+          <div class="perf-footer">
+            <span class="perf-stat">Precision <span>0.944</span></span>
+            <span class="perf-stat">Recall <span>0.964</span></span>
+            <span class="perf-stat">F1 <span>0.954</span></span>
+          </div>
+        </div>
+        <div class="perf-card">
+          <div class="perf-card-header">
+            <span class="perf-card-name">Catalyst Efficiency Low</span>
+            <span class="perf-card-dtc">P0420</span>
+          </div>
+          <div class="perf-bar-wrap"><div class="perf-bar" data-width="93.6"></div></div>
+          <div class="perf-footer">
+            <span class="perf-stat">Precision <span>0.939</span></span>
+            <span class="perf-stat">Recall <span>0.934</span></span>
+            <span class="perf-stat">F1 <span>0.936</span></span>
+          </div>
+        </div>
+        <div class="perf-card">
+          <div class="perf-card-header">
+            <span class="perf-card-name">Random Multi-Cylinder Misfire</span>
+            <span class="perf-card-dtc">P0300</span>
+          </div>
+          <div class="perf-bar-wrap"><div class="perf-bar" data-width="69.3"></div></div>
+          <div class="perf-footer">
+            <span class="perf-stat">Precision <span>0.876</span></span>
+            <span class="perf-stat">Recall <span>0.573</span></span>
+            <span class="perf-stat">F1 <span>0.693</span></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     LIVE APPLICATIONS
+═══════════════════════════════════════════════════ -->
+<section id="apps">
+  <div class="container">
+    <div class="apps-header reveal">
+      <span class="section-label">Live Applications</span>
+      <h2 class="section-title">Explore the System</h2>
+      <p class="section-sub">Two standalone platforms built on top of the research — ready for fleet operators and researchers.</p>
+    </div>
+    <div class="apps-grid">
+      <!-- Fleet Manager Dashboard -->
+      <div class="app-card fleet reveal reveal-delay-1">
+        <div class="app-card-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/><polyline points="7 10 12 15 17 10"/></svg>
+        </div>
+        <h3>Fleet Manager Dashboard</h3>
+        <p>A real-time operational dashboard for fleet managers. Monitor live OBD-II telemetry from all vehicles, receive instant fault alerts, and track vehicle health over time.</p>
+        <div class="app-features">
+          <span class="app-feature">Real-time OBD-II telemetry gauges</span>
+          <span class="app-feature">WebSocket-powered live fault alerts</span>
+          <span class="app-feature">Per-vehicle anomaly score timeline</span>
+          <span class="app-feature">DTC prediction with confidence scores</span>
+          <span class="app-feature">Maintenance action recommendations</span>
+        </div>
+        <a href="#" class="app-btn" id="fleet-link">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+          Open Dashboard
+        </a>
+        <span class="app-soon">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          Link will be added soon
+        </span>
+      </div>
+
+      <!-- ML Statistics Platform -->
+      <div class="app-card ml reveal reveal-delay-2">
+        <div class="app-card-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        </div>
+        <h3>ML Statistics &amp; Evaluation Platform</h3>
+        <p>An interactive analytics platform for exploring model performance in depth. Visualise confusion matrices, ROC curves, feature importances, and run live fault injection tests.</p>
+        <div class="app-features">
+          <span class="app-feature">Interactive confusion matrix heatmap</span>
+          <span class="app-feature">ROC curve and AUC visualisation</span>
+          <span class="app-feature">Gini feature importance rankings</span>
+          <span class="app-feature">Live fault injection simulator</span>
+          <span class="app-feature">Per-class precision / recall explorer</span>
+        </div>
+        <a href="#" class="app-btn" id="ml-link">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+          Open Platform
+        </a>
+        <span class="app-soon">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          Link will be added soon
+        </span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     TECH STACK
+═══════════════════════════════════════════════════ -->
+<section id="tech">
+  <div class="container">
+    <div class="tech-header reveal">
+      <span class="section-label">Technology Stack</span>
+      <h2 class="section-title">Built With</h2>
+    </div>
+    <div class="tech-grid reveal reveal-delay-1">
+      <span class="tech-pill"><span class="tech-dot" style="background:#3776AB"></span>Python 3.12</span>
+      <span class="tech-pill"><span class="tech-dot" style="background:#F7931E"></span>scikit-learn 1.8</span>
+      <span class="tech-pill"><span class="tech-dot" style="background:#EE4C2C"></span>PyTorch / LSTM</span>
+      <span class="tech-pill"><span class="tech-dot" style="background:#0288D1"></span>Cantera</span>
+      <span class="tech-pill"><span class="tech-dot" style="background:#4CAF50"></span>CTGAN / SDV</span>
+      <span class="tech-pill"><span class="tech-dot" style="background:#FF6B35"></span>ESP32</span>
+      <span class="tech-pill"><span class="tech-dot" style="background:#660066"></span>ELM327</span>
+      <span class="tech-pill"><span class="tech-dot" style="background:#3A76B0"></span>Mosquitto MQTT</span>
+      <span class="tech-pill"><span class="tech-dot" style="background:#336791"></span>PostgreSQL</span>
+      <span class="tech-pill"><span class="tech-dot" style="background:#1BA2BF"></span>TimescaleDB</span>
+      <span class="tech-pill"><span class="tech-dot" style="background:#61DAFB"></span>React</span>
+      <span class="tech-pill"><span class="tech-dot" style="background:#21759B"></span>FastAPI</span>
+      <span class="tech-pill"><span class="tech-dot" style="background:#FF6D00"></span>WebSocket</span>
+      <span class="tech-pill"><span class="tech-dot" style="background:#8E44AD"></span>Recharts</span>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     TEAM
+═══════════════════════════════════════════════════ -->
+<section id="team">
+  <div class="container">
+    <div class="team-header reveal">
+      <span class="section-label">Research Team</span>
+      <h2 class="section-title">The People Behind This Research</h2>
+      <p class="section-sub">BICT Honours Degree 2026 · Department of Information and Communication Technology · Faculty of Technology, USJ</p>
+    </div>
+
+    <div class="supervisors-row">
+      <div class="supervisor-card main reveal reveal-delay-1">
+        <div class="sup-name">Dr. Prabhani Liyanage</div>
+        <div class="sup-role">Senior Lecturer Grade II<br>Faculty of Technology, USJ</div>
+      </div>
+      <div class="supervisor-card reveal reveal-delay-2">
+        <div class="sup-name">Akalanka Panapitiya</div>
+        <div class="sup-role">Lecturer<br>Faculty of Technology, USJ</div>
+      </div>
+      <div class="supervisor-card reveal reveal-delay-3">
+        <div class="sup-name">Nirasha Kulasooriya</div>
+        <div class="sup-role">Lecturer<br>Faculty of Technology, USJ</div>
+      </div>
+    </div>
+
+    <div class="section-divider-label">Group Members</div>
+
+    <div class="members-row">
+      <div class="member-card reveal reveal-delay-1">
+        <div class="member-avatar">D</div>
+        <div class="member-name">L.K.K.S Dassanayaka</div>
+        <div class="member-id">ICT/21/953</div>
+      </div>
+      <div class="member-card reveal reveal-delay-2">
+        <div class="member-avatar">E</div>
+        <div class="member-name">L.P.E.S.T Ekanayaka</div>
+        <div class="member-id">ICT/21/837</div>
+      </div>
+      <div class="member-card reveal reveal-delay-3">
+        <div class="member-avatar">A</div>
+        <div class="member-name">S.A Anuththara</div>
+        <div class="member-id">ICT/21/807</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     FOOTER
+═══════════════════════════════════════════════════ -->
+<footer id="footer">
+  <div class="container">
+    <div class="footer-inner">
+      <div class="footer-brand">
+        <div class="nav-logo">
+          <div class="nav-logo-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+              <path d="M2 17l10 5 10-5"/>
+              <path d="M2 12l10 5 10-5"/>
+            </svg>
+          </div>
+          <span class="nav-logo-text">FleetGuard</span>
+        </div>
+        <p>An IoT and Machine Learning framework for intelligent predictive maintenance of commercial vehicle fleets. BICT Honours Research, Faculty of Technology, University of Sri Jayewardenepura.</p>
+      </div>
+      <div class="footer-col">
+        <h5>Navigate</h5>
+        <ul>
+          <li><a href="#overview">Research Overview</a></li>
+          <li><a href="#pipeline">Pipeline</a></li>
+          <li><a href="#faults">Fault Classes</a></li>
+          <li><a href="#results">Results</a></li>
+          <li><a href="#team">Team</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h5>Applications</h5>
+        <ul>
+          <li><a href="#" id="footer-fleet-link">Fleet Manager Dashboard</a></li>
+          <li><a href="#" id="footer-ml-link">ML Statistics Platform</a></li>
+          <li><a href="#">Research Paper</a></li>
+          <li><a href="#">GitHub Repository</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2026 FleetGuard Research Group · Faculty of Technology, USJ</span>
+      <span>BICT Honours Degree · Group ICT/21</span>
+    </div>
+  </div>
+</footer>
+
+<!-- ═══════════════════════════════════════════════════
+     JAVASCRIPT
+═══════════════════════════════════════════════════ -->
+<script>
+  // ── Navbar scroll effect ───────────────────────────────
+  const navbar = document.getElementById('navbar');
+  window.addEventListener('scroll', () => {
+    navbar.classList.toggle('scrolled', window.scrollY > 40);
+  }, { passive: true });
+
+  // ── Active nav link on scroll ──────────────────────────
+  const sections  = document.querySelectorAll('section[id]');
+  const navLinks  = document.querySelectorAll('.nav-links a');
+
+  const onScroll = () => {
+    let current = '';
+    sections.forEach(s => {
+      if (window.scrollY >= s.offsetTop - 120) current = s.id;
+    });
+    navLinks.forEach(a => {
+      a.classList.toggle('active', a.getAttribute('href') === '#' + current);
+    });
+  };
+  window.addEventListener('scroll', onScroll, { passive: true });
+
+  // ── Hamburger / Mobile menu ────────────────────────────
+  const hamburger  = document.getElementById('hamburger-btn');
+  const mobileMenu = document.getElementById('mobile-menu');
+
+  hamburger.addEventListener('click', () => {
+    mobileMenu.classList.toggle('open');
+  });
+  mobileMenu.addEventListener('click', e => {
+    if (e.target === mobileMenu) closeMobileMenu();
+  });
+  function closeMobileMenu() {
+    mobileMenu.classList.remove('open');
+  }
+
+  // ── Scroll reveal ──────────────────────────────────────
+  const revealEls = document.querySelectorAll('.reveal');
+  const revealObs = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.classList.add('visible');
+        revealObs.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.12 });
+  revealEls.forEach(el => revealObs.observe(el));
+
+  // ── Fault bars animation ───────────────────────────────
+  const barObs = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.querySelectorAll('.fault-bar, .perf-bar').forEach(bar => {
+          const w = bar.dataset.width;
+          setTimeout(() => { bar.style.width = w + '%'; }, 300);
+        });
+        barObs.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.3 });
+
+  document.querySelectorAll('.hero-card-main, .metric-cards').forEach(el => barObs.observe(el));
+
+  // also trigger on results section
+  const resultsSection = document.getElementById('results');
+  if (resultsSection) {
+    const resObs = new IntersectionObserver(entries => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          document.querySelectorAll('.perf-bar').forEach(bar => {
+            const w = bar.dataset.width;
+            setTimeout(() => { bar.style.width = w + '%'; }, 400);
+          });
+          resObs.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.1 });
+    resObs.observe(resultsSection);
+  }
+
+  // ── Count-up animation ─────────────────────────────────
+  function animateCount(el) {
+    const target  = parseFloat(el.dataset.target);
+    const suffix  = el.dataset.suffix || '';
+    const duration = 1800;
+    const start    = performance.now();
+
+    const step = now => {
+      const progress = Math.min((now - start) / duration, 1);
+      const ease     = 1 - Math.pow(1 - progress, 3);
+      const current  = Math.floor(ease * target);
+      el.textContent = current + suffix;
+      if (progress < 1) requestAnimationFrame(step);
+      else el.textContent = target + suffix;
+    };
+    requestAnimationFrame(step);
+  }
+
+  const countObs = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.querySelectorAll('[data-target]').forEach(animateCount);
+        countObs.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.4 });
+
+  document.querySelectorAll('#stats, .hero-card-main').forEach(el => countObs.observe(el));
+
+  // ── Smooth scroll for all anchor links ────────────────
+  document.querySelectorAll('a[href^="#"]').forEach(a => {
+    a.addEventListener('click', e => {
+      const target = document.querySelector(a.getAttribute('href'));
+      if (target) {
+        e.preventDefault();
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    });
+  });
+</script>
+</body>
+</html>
